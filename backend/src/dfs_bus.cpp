@@ -1,51 +1,59 @@
-#include <iostream>
 #include <vector>
-using namespace std;
-// Глобальные переменные
-vector<vector<int>> DMas; //Двухмерный массив
-vector<bool> Flag;    // Помечать остановки на которых были
+#include "graph.hpp"
 
-// Функция поиска в глубину (DFS)
-void dfs(int a) {
-    Flag[a] = true; // Помечаем посещенную остановку
-    
-// Проходим по всем остановкам
-for (int sosed : DMas[a]) {
-    if (!Flag[sosed]) {
-        dfs(sosed);
+using namespace std;
+
+void dfs_bus(const Graph& g, int v, vector<bool>& used, vector<int>& component) {
+    used[v] = true;
+    component.push_back(v);
+
+    for (const Edge& e : g.adj[v]) {
+        // Пропускаем все типы транспорта, кроме автобуса
+        if (e.mode != MODE_BUS) {
+            continue;
+        }
+
+        int to = e.to;
+        if (!used[to]) {
+            dfs_bus(g, to, used, component);
         }
     }
 }
 
-int main() {
-    cout << "Введите кол-во остановок и маршрутов: " << endl;
-    int b, c;
-    cin >> b >> c;
-    // Инициализируем граф
-    DMas.resize(b); //Меняем размер вектора
-    Flag.assign(b, false); //Добавляет нов. знач. в вектор и меняет его размер
+/**
+ * Определение компонент связности автобусной сети.
+ * Возвращает вектор векторов, где каждый внутренний вектор — это отдельная компонента.
+ */
+vector<vector<int>> find_bus_components(const Graph& g) {
+    vector<bool> used(g.n + 1, false);
+    vector<vector<int>> components;
 
-    cout << "Введите маршруты, пары остановок от 0 до " << b-1 << ":" << endl;
-    for (int i = 0; i < c; ++i) {
-        int d, e;
-        cin >> d >> e;
-        // Дороги туда и обратно
-        DMas[d].push_back(d);
-        DMas[e].push_back(e);
-    }
-
-    int score = 0; // Счетчик компонент связности
-
-    // Проходим по всем остановкам (основной)
-    for (int i = 0; i < b; ++i) {
-        if (!Flag[i]) {
-            // Если есть не посещенная остановка, то создается новая сеть
-            score++;
-            dfs(i); // Запускаем DFS, чтобы пометить всю сеть
+    for (int v = 1; v <= g.n; ++v) {
+        // Если вершина еще не посещена, значит найдена новая компонента
+        if (!used[v]) {
+            vector<int> current_component;
+            dfs_bus(g, v, used, current_component);
+            components.push_back(current_component);
         }
     }
 
-    cout << "Количество изолированных автобусных сетей: " << score << endl;
+    return components;
+}
 
-    return 0;
+/**
+ * Подсчет количества изолированных автобусных зон (компонент связности).
+ */
+int count_bus_components(const Graph& g) {
+    vector<bool> used(g.n + 1, false);
+    int count = 0;
+
+    for (int v = 1; v <= g.n; ++v) {
+        if (!used[v]) {
+            count++;
+            vector<int> dummy; // Нам не важен состав, только факт наличия
+            dfs_bus(g, v, used, dummy);
+        }
+    }
+
+    return count;
 }
