@@ -3,10 +3,15 @@
 
 using namespace std;
 
+static const int MAXN = 100000;
+
+bool used[MAXN];
+
 // DFS для метро
-void dfs_metro(const Graph& g, int v, vector<bool>& used)
+void dfs_metro(const Graph& g, int v, vector<int>& component)
 {
-    used[v] = true; // пометка остановок
+    used[v] = true;
+    component.push_back(v);
 
     for (const Edge& e : g.adj[v])
     {
@@ -14,25 +19,31 @@ void dfs_metro(const Graph& g, int v, vector<bool>& used)
             continue;
 
         int to = e.to;
-
         if (!used[to])
-            dfs_metro(g, to, used);
+            dfs_metro(g, to, component);
     }
 }
 
 // поиск компонент метро
-int count_metro_components(const Graph& g)
+vector<vector<int>> find_metro_components(const Graph& g)
 {
-    vector<bool> used(g.n + 1, false);
-    int components = 0;
+    int n = g.n;
 
-    for (int v = 1; v <= g.n; ++v)
+    for (int i = 0; i < n; ++i)
+        used[i] = false;
+
+    vector<vector<int>> components;
+
+    for (int v = 0; v < n; ++v)
     {
-        if (!used[v])
-        {
-            components++;
-            dfs_metro(g, v, used);
-        }
+        if (used[v])
+            continue;
+
+        vector<int> component;
+        dfs_metro(g, v, component);
+
+        if (!component.empty())
+            components.push_back(component);
     }
 
     return components;
@@ -41,23 +52,43 @@ int count_metro_components(const Graph& g)
 // Поиск изолированных зон метро
 vector<int> find_isolated_metro_zones(const Graph& g)
 {
-    vector<bool> used(g.n + 1, false);
+    int n = g.n;
 
-    // отмечаем все вершины, достижимые по метро
-    for (int v = 1; v <= g.n; ++v)
-    {
-        if (!used[v])
-            dfs_metro(g, v, used);
-    }
+    for (int i = 0; i < n; ++i)
+        used[i] = false;
 
-    // все изолированные вершины
     vector<int> isolated;
-    for (int v = 1; v <= g.n; ++v)
+
+    for (int v = 0; v < n; ++v)
     {
-        if (!used[v])
-            isolated.push_back(v);
+        if (used[v])
+            continue;
+
+        vector<int> component;
+        dfs_metro(g, v, component);
+
+        bool hasMetroEdge = false;
+
+        for (int u : component)
+        {
+            for (const Edge& e : g.adj[u])
+            {
+                if (e.mode == MODE_METRO)
+                {
+                    hasMetroEdge = true;
+                    break;
+                }
+            }
+            if (hasMetroEdge)
+                break;
+        }
+
+        if (!hasMetroEdge)
+        {
+            for (int u : component)
+                isolated.push_back(u);
+        }
     }
 
     return isolated;
 }
-//на созвоне лучше сказать что не так
