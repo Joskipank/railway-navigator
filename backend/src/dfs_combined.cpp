@@ -20,7 +20,7 @@ void dfs_combined(const Graph& g, int v, vector<int>& used, vector<int>& compone
     component.push_back(v);
 
     // DFS по автобусам
-    dfs_bus(g, v, used);
+    dfs_bus(g, v, used, component);
 
     // DFS по метро
     dfs_metro(g, v, used);
@@ -157,3 +157,4 @@ void show_zones(const Graph& g) {
         printf("]\n");
     }
 }
+
