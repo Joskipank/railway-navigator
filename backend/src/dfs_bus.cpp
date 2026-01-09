@@ -3,7 +3,7 @@
 
 using namespace std;
 
-void dfs_bus(const Graph& g, int v, vector<bool>& used, vector<int>& component) {
+void dfs_bus(const Graph& g, int v, vector<int>& used, vector<int>& component) {
     used[v] = true;
     component.push_back(v);
 
@@ -25,7 +25,7 @@ void dfs_bus(const Graph& g, int v, vector<bool>& used, vector<int>& component) 
  * Возвращает вектор векторов, где каждый внутренний вектор — это отдельная компонента.
  */
 vector<vector<int>> find_bus_components(const Graph& g) {
-    vector<bool> used(g.n + 1, false);
+    vector<int> used(g.n + 1, false);
     vector<vector<int>> components;
 
     for (int v = 1; v <= g.n; ++v) {
@@ -44,7 +44,7 @@ vector<vector<int>> find_bus_components(const Graph& g) {
  * Подсчет количества изолированных автобусных зон (компонент связности).
  */
 int count_bus_components(const Graph& g) {
-    vector<bool> used(g.n + 1, false);
+    vector<int> used(g.n + 1, false);
     int count = 0;
 
     for (int v = 1; v <= g.n; ++v) {
@@ -57,3 +57,4 @@ int count_bus_components(const Graph& g) {
 
     return count;
 }
+
