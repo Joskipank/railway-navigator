@@ -56,3 +56,104 @@ vector<vector<int>> find_components(const Graph& g)
 
     return components;
 }
+
+// Сортировка и вывод компонент
+void print_sorted_zones(const Graph& g) {
+    // Получаем компоненты
+    vector<vector<int>> comps = find_components(g);
+    int zones = comps.size();
+    
+    if (zones == 0) {
+        printf("Нет изолированных зон\n");
+        return;
+    }
+    
+    // Массив для сортировки
+    int* sizes = new int[zones];
+    int** zones_data = new int*[zones];
+    
+    for (int i = 0; i < zones; i++) {
+        sizes[i] = comps[i].size();
+        zones_data[i] = new int[sizes[i]];
+        for (int j = 0; j < sizes[i]; j++) {
+            zones_data[i][j] = comps[i][j];
+        }
+    }
+    
+    // Сортировка пузырьком по убыванию размера
+    for (int i = 0; i < zones - 1; i++) {
+        for (int j = 0; j < zones - i - 1; j++) {
+            if (sizes[j] < sizes[j + 1]) {
+                // Меняем местами
+                int temp_size = sizes[j];
+                sizes[j] = sizes[j + 1];
+                sizes[j + 1] = temp_size;
+                
+                int* temp_ptr = zones_data[j];
+                zones_data[j] = zones_data[j + 1];
+                zones_data[j + 1] = temp_ptr;
+            }
+        }
+    }
+    
+    // Вывод заголовка
+    printf("\nИЗОЛИРОВАННЫЕ ЗОНЫ (отсортировано по размеру):\n");
+    printf("Всего зон: %d\n", zones);
+    printf("-----------------------------\n");
+    
+    // Вывод результатов
+    for (int i = 0; i < zones; i++) {
+        printf("%d. %d станций: ", i + 1, sizes[i]);
+        
+        // Показываем первые 5 станций
+        int show = sizes[i] > 5 ? 5 : sizes[i];
+        for (int j = 0; j < show; j++) {
+            printf("%d", zones_data[i][j]);
+            if (j < show - 1) printf(", ");
+        }
+        
+        if (sizes[i] > 5) printf(", ...");
+        printf("\n");
+    }
+    
+    // Статистика
+    int total = 0;
+    for (int i = 0; i < zones; i++) total += sizes[i];
+    printf("\nСтатистика:\n");
+    printf("- Охвачено станций: %d из %d\n", total, g.n);
+    printf("- Самая большая зона: %d станций\n", sizes[0]);
+    printf("- Самая маленькая: %d станций\n", sizes[zones - 1]);
+    
+    // Очистка
+    for (int i = 0; i < zones; i++) {
+        delete[] zones_data[i];
+    }
+    delete[] zones_data;
+    delete[] sizes;
+}
+
+// Быстрый вызов
+void show_zones(const Graph& g) {
+    vector<vector<int>> comps = find_components(g);
+    
+    // Сортировка исходного вектора
+    for (int i = 0; i < comps.size(); i++) {
+        for (int j = i + 1; j < comps.size(); j++) {
+            if (comps[i].size() < comps[j].size()) {
+                vector<int> temp = comps[i];
+                comps[i] = comps[j];
+                comps[j] = temp;
+            }
+        }
+    }
+    
+    printf("\nЗоны (по размеру):\n");
+    for (int i = 0; i < comps.size(); i++) {
+        printf("%d. %d ст.: [", i + 1, comps[i].size());
+        for (int j = 0; j < comps[i].size(); j++) {
+            printf("%d", comps[i][j]);
+            if (j < comps[i].size() - 1) printf(" ");
+        }
+        printf("]\n");
+    }
+}
