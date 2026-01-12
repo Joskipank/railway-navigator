@@ -31,6 +31,13 @@ static const int MODE_METRO = 0;
 static const int MODE_BUS   = 1;
 static const int MODE_RAIL  = 2;
 
+enum class TransportType : int {
+    Metro = MODE_METRO,
+    Bus = MODE_BUS,
+    Rail = MODE_RAIL,
+    All = -1
+};
+
 struct Edge {
     int to;            // куда ведёт ребро
     int mode;          // 0..2
@@ -43,6 +50,16 @@ struct Graph {
     int n; // число вершин
     int m; // число НЕориентированных ребер
     std::vector<std::vector<Edge>> adj; // adj[1..n]
+    std::array<std::vector<std::vector<int>>, 3> adjacency; // adjacency[mode][1..n]
+
+    std::vector<std::vector<int>> getConnectedComponents(TransportType type) const;
+    std::vector<int> getIsolatedZones(TransportType type) const;
+    void dfsIterative(
+        int start,
+        TransportType type,
+        std::vector<bool>& visited,
+        std::vector<int>& component
+    ) const;
 };
 
 /*
@@ -57,6 +74,9 @@ inline void graph_init(Graph& g, int n) {
     g.n = n;
     g.m = 0;
     g.adj.assign(static_cast<std::size_t>(n) + 1, std::vector<Edge>{});
+    for (auto& by_mode : g.adjacency) {
+        by_mode.assign(static_cast<std::size_t>(n) + 1, std::vector<int>{});
+    }
 }
 
 // VALID-VERTEX(G, v)
@@ -80,6 +100,8 @@ inline void graph_add_undirected(Graph& g, int u, int v, int mode, double base_t
     // добавить обе стороны (u->v и v->u)
     g.adj[u].push_back(Edge{v, mode, base_time, load, id});
     g.adj[v].push_back(Edge{u, mode, base_time, load, id});
+    g.adjacency[static_cast<std::size_t>(mode)][u].push_back(v);
+    g.adjacency[static_cast<std::size_t>(mode)][v].push_back(u);
 }
 
 /*

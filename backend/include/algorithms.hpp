@@ -5,18 +5,12 @@
 #include <array>
 #include <cstdint>
 
-#include "graph.hpp"
+#include "models/graph.hpp"
 #include "parser.hpp"   // ModelParams, Request
 
 // -------------------- DFS: компоненты связности --------------------
-// mode_filter:
-//   -1  => использовать все ребра (объединенный граф)
-//   0/1/2 => использовать только ребра данного вида транспорта
-std::vector<std::vector<int>> get_components(const Graph& g, int mode_filter);
-
-// Возвращает "изолированные зоны": все компоненты кроме крупнейшей,
-// отсортированные по невозрастанию размера, а внутри станции по возрастанию
-std::vector<std::vector<int>> get_isolated_zones(const Graph& g, int mode_filter);
+std::vector<std::vector<int>> get_connected_components(const Graph& g, TransportType type);
+std::vector<int> get_isolated_zones(const Graph& g, TransportType type);
 
 
 // -------------------- Маршруты / Дейкстра --------------------
