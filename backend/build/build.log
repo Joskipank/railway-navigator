@@ -1,0 +1,4 @@
+backend/src/dijkstra.cpp: In function «std::vector<int> restore_path(int, int, const std::vector<std::vector<std::pair<int, int> > >&)»:
+backend/src/dijkstra.cpp:90:5: ошибка: нет декларации «reverse» в этой области видимости
+   90 |     reverse(path.begin(), path.end());
+      |     ^~~~~~~

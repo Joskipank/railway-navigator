@@ -1,9 +1,10 @@
 #include "algorithms.hpp"
-
+#include <iostream>
 #include <cassert>
 #include <vector>
 
 int main() {
+    std::cout << "start\n";
     Graph g;
     graph_init(g, 6);
 

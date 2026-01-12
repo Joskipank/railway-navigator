@@ -3,6 +3,7 @@
 #include <queue>
 #include <array>
 #include <limits>
+#include <algorithm>
 
 using namespace std;
 
@@ -87,6 +88,6 @@ vector<int> restore_path(
         m = p.second;
     }
 
-    reverse(path.begin(), path.end());
+    std::reverse(path.begin(), path.end());
     return path;
 }

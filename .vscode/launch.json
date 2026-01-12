@@ -8,8 +8,9 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/iminovm/railway-navigator/backend/src",
-      "program": "/home/iminovm/railway-navigator/backend/src/build/Debug/outDebug",
+      "cwd": "/home/iminovm/railway-navigator/backend",
+      "program": "/home/iminovm/railway-navigator/backend/build/tests",
+      "preLaunchTask": "build-tests",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
