@@ -28,15 +28,11 @@ void print_zone_summary(const std::vector<std::vector<int>>& comps, int total_ve
         const auto& comp = comps[static_cast<std::size_t>(i)];
         std::printf("%d. %d stations: ", i + 1, static_cast<int>(comp.size()));
 
-        const int show = comp.size() > 5 ? 5 : static_cast<int>(comp.size());
-        for (int j = 0; j < show; ++j) {
+        for (int j = 0; j < static_cast<int>(comp.size()); ++j) {
             std::printf("%d", comp[static_cast<std::size_t>(j)]);
-            if (j < show - 1) {
+            if (j + 1 < static_cast<int>(comp.size())) {
                 std::printf(", ");
             }
-        }
-        if (comp.size() > 5) {
-            std::printf(", ...");
         }
         std::printf("\n");
     }
@@ -72,6 +68,9 @@ void print_zone_list(const std::vector<std::vector<int>>& comps) {
 std::vector<std::vector<int>> find_components(const Graph& g) {
     auto comps = g.getConnectedComponents(TransportType::All);
     std::sort(comps.begin(), comps.end(), by_size_desc);
+    if (!comps.empty()) {
+        comps.erase(comps.begin()); // исключаем крупнейшую компоненту
+    }
     return comps;
 }
 

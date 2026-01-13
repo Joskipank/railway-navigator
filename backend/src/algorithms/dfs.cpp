@@ -1,9 +1,21 @@
 #include "algorithms.hpp"
 
 #include <algorithm>
-#include <stack>
+#include <cstdint>
 
 namespace {
+
+enum class Color : std::uint8_t { White, Gray, Black };
+
+// Цвета и времена открытия/закрытия соответствуют DFS в CLRS и задают дерево предков,
+// а также позволяют классифицировать рёбра при необходимости.
+struct DfsState {
+    std::vector<Color> color;
+    std::vector<int> parent;
+    std::vector<int> discovery;
+    std::vector<int> finish;
+    int time = 0;
+};
 
 bool is_indexed_type(TransportType type) {
     const int value = static_cast<int>(type);
@@ -14,72 +26,72 @@ std::size_t type_index(TransportType type) {
     return static_cast<std::size_t>(static_cast<int>(type));
 }
 
-} // namespace
-
-void Graph::dfsIterative(
-    int start,
+// DFS-VISIT(u): на входе u белая; на выходе u черная и все достижимые из u
+// вершины в соответствующем подграфе также черные (CLRS 22.3).
+void dfs_visit(
+    const Graph& g,
+    int u,
     TransportType type,
-    std::vector<bool>& visited,
+    DfsState& state,
     std::vector<int>& component
-) const {
-    if (start < 1 || start > n) {
-        return;
-    }
-    if (visited[start]) {
+) {
+    if (!valid_vertex(g, u)) {
         return;
     }
 
-    std::stack<int> stack;
-    stack.push(start);
-    visited[start] = true;
+    state.time += 1;
+    state.discovery[u] = state.time;
+    state.color[u] = Color::Gray;
+    component.push_back(u);
 
-    while (!stack.empty()) {
-        const int v = stack.top();
-        stack.pop();
-
-        component.push_back(v);
-
-        if (v < 1 || v > n) {
-            continue;
-        }
-
-        if (is_indexed_type(type)) {
-            const std::size_t idx = type_index(type);
-            for (int to : adjacency[idx][v]) {
-                if (to < 1 || to > n) {
-                    continue;
-                }
-                if (!visited[to]) {
-                    visited[to] = true;
-                    stack.push(to);
-                }
+    if (is_indexed_type(type)) {
+        const std::size_t idx = type_index(type);
+        for (int v : g.adjacency[idx][u]) {
+            if (!valid_vertex(g, v)) {
+                continue;
             }
-        } else {
-            for (const Edge& e : adj[v]) {
-                const int to = e.to;
-                if (to < 1 || to > n) {
-                    continue;
-                }
-                if (!visited[to]) {
-                    visited[to] = true;
-                    stack.push(to);
-                }
+            if (state.color[v] == Color::White) {
+                state.parent[v] = u;
+                dfs_visit(g, v, type, state, component);
+            }
+        }
+    } else {
+        for (const Edge& e : g.adj[u]) {
+            const int v = e.to;
+            if (!valid_vertex(g, v)) {
+                continue;
+            }
+            if (state.color[v] == Color::White) {
+                state.parent[v] = u;
+                dfs_visit(g, v, type, state, component);
             }
         }
     }
+
+    state.color[u] = Color::Black;
+    state.time += 1;
+    state.finish[u] = state.time;
 }
 
+} // namespace
+
 std::vector<std::vector<int>> Graph::getConnectedComponents(TransportType type) const {
-    std::vector<bool> visited(static_cast<std::size_t>(n) + 1, false);
+    // DFS формирует лес предков; каждая его вершина соответствует компоненте связности.
+    DfsState state;
+    state.color.assign(static_cast<std::size_t>(n) + 1, Color::White);
+    state.parent.assign(static_cast<std::size_t>(n) + 1, -1);
+    state.discovery.assign(static_cast<std::size_t>(n) + 1, 0);
+    state.finish.assign(static_cast<std::size_t>(n) + 1, 0);
+
     std::vector<std::vector<int>> components;
     components.reserve(static_cast<std::size_t>(n));
 
-    for (int v = 1; v <= n; ++v) {
-        if (visited[v]) {
+    for (int u = 1; u <= n; ++u) {
+        if (state.color[u] != Color::White) {
             continue;
         }
         std::vector<int> component;
-        dfsIterative(v, type, visited, component);
+        dfs_visit(*this, u, type, state, component);
         if (!component.empty()) {
             std::sort(component.begin(), component.end());
             components.push_back(std::move(component));
@@ -104,13 +116,15 @@ std::vector<int> Graph::getIsolatedZones(TransportType type) const {
     std::vector<int> isolated;
     const std::vector<std::vector<int>> components = getConnectedComponents(type);
 
-    for (const auto& component : components) {
-        if (component.size() == 1) {
-            isolated.push_back(component.front());
-        }
+    if (components.size() <= 1) {
+        return isolated;
     }
 
-    std::sort(isolated.begin(), isolated.end());
+    for (std::size_t i = 1; i < components.size(); ++i) {
+        const auto& component = components[i];
+        isolated.insert(isolated.end(), component.begin(), component.end());
+    }
+
     return isolated;
 }
 

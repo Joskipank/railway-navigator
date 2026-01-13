@@ -9,11 +9,15 @@
 #include "parser.hpp"   // ModelParams, Request
 
 // -------------------- DFS: компоненты связности --------------------
+// DFS с цветами, временем открытия/закрытия и деревом предков (CLRS, гл. 22.3).
+// Сложность: O(V + E) для представления списками смежности.
 std::vector<std::vector<int>> get_connected_components(const Graph& g, TransportType type);
 std::vector<int> get_isolated_zones(const Graph& g, TransportType type);
 
 
 // -------------------- Маршруты / Дейкстра --------------------
+// Дейкстра для графа состояний (v, last_mode) с неотрицательными весами.
+// Сложность: O((V + E) log V) при двоичной куче (CLRS, гл. 24.3).
 struct Step {
     int from = 0;
     int to = 0;
@@ -29,13 +33,13 @@ struct Route {
     std::vector<Step> steps;          // последовательность переходов
 };
 
-// Результат Дейкстры "по состояниям": (vertex, last_mode)
+// Результат Дейкстры по состояниям (v, last_mode).
 struct DijkstraStateResult {
-    // dist_time[v][m], dist_tr[v][m]
+    // d_time[v][m], d_tr[v][m] — оценки расстояний/пересадок.
     std::vector<std::array<double, 3>> dist_time;
     std::vector<std::array<int, 3>> dist_transfers;
 
-    // предки для восстановления маршрута к конкретному (v,m)
+    // pi_v[v][m], pi_mode[v][m], pi_edge_mode[v][m] — дерево предков.
     std::vector<std::array<int, 3>> parent_v;
     std::vector<std::array<int, 3>> parent_mode;
     std::vector<std::array<int, 3>> parent_edge_mode; // mode ребра, по которому пришли

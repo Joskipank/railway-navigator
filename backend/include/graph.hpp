@@ -8,21 +8,16 @@
 
 /*
 ----------------------------------------------------------------------
-ПРЕДСТАВЛЕНИЕ ГРАФА (как в учебниках)
+ПРЕДСТАВЛЕНИЕ ГРАФА (в терминах CLRS)
 
-Транспортная сеть моделируется как НЕОРИЕНТИРОВАННЫЙ МУЛЬТИГРАФ:
-- вершины: станции 1..N
-- ребра: перемещения (метро/автобус/жд)
-- между двумя станциями может быть несколько ребер (мульти-рёбра)
+Граф G = (V, E) — неориентированный мультиграф. Вершины V соответствуют
+станциям; далее используется термин "вершина". Рёбра E моделируют
+переходы (метро/автобус/жд). Между одной парой вершин допускаются
+параллельные рёбра.
 
-Хранение: СПИСКИ СМЕЖНОСТИ.
-Для каждой вершины u хранится список Adj[u] ребер (u -> v).
-Одно неориентированное ребро (u <-> v) хранится ДВАЖДЫ:
-- в Adj[u] как (to=v)
-- в Adj[v] как (to=u)
-
-Это соответствует требованию "граф хранить в виде списков смежности;
-поддерживать несколько рёбер между одной парой станций". :contentReference[oaicite:1]{index=1}
+Хранение: списки смежности Adj[u] для каждой вершины u.
+Каждое неориентированное ребро {u, v} хранится как два ориентированных
+рёбра (u, v) в Adj[u] и (v, u) в Adj[v], как в CLRS.
 ----------------------------------------------------------------------
 */
 
@@ -39,27 +34,21 @@ enum class TransportType : int {
 };
 
 struct Edge {
-    int to;            // куда ведёт ребро
-    int mode;          // 0..2
-    double base_time;  // базовое время
-    double load;       // загрузка [0..1]
-    int id;            // идентификатор неориентированного ребра (один на обе стороны)
+    int to;            // конечная вершина v (ребро (u, v) хранится в Adj[u])
+    int mode;          // тип ребра (0..2)
+    double base_time;  // вес ребра w(u, v) без учета загрузки/пересадки
+    double load;       // коэффициент загрузки [0..1]
+    int id;            // идентификатор неориентированного ребра (общий для обеих сторон)
 };
 
 struct Graph {
-    int n; // число вершин
-    int m; // число НЕориентированных ребер
-    std::vector<std::vector<Edge>> adj; // adj[1..n]
-    std::array<std::vector<std::vector<int>>, 3> adjacency; // adjacency[mode][1..n]
+    int n; // |V| — число вершин
+    int m; // |E| — число неориентированных ребер
+    std::vector<std::vector<Edge>> adj; // Adj[u], u = 1..n
+    std::array<std::vector<std::vector<int>>, 3> adjacency; // Adj_mode[u], u = 1..n
 
     std::vector<std::vector<int>> getConnectedComponents(TransportType type) const;
     std::vector<int> getIsolatedZones(TransportType type) const;
-    void dfsIterative(
-        int start,
-        TransportType type,
-        std::vector<bool>& visited,
-        std::vector<int>& component
-    ) const;
 };
 
 /*
@@ -105,10 +94,8 @@ inline void graph_add_undirected(Graph& g, int u, int v, int mode, double base_t
 }
 
 /*
-Фактическое время на ребре:
-time = base_time * (1 + load * sensitivity[mode])
-
-Это ровно из условия. :contentReference[oaicite:2]{index=2}
+Вес ребра w(u, v) с учетом загрузки:
+time = base_time * (1 + load * sensitivity[mode]).
 */
 inline double edge_time(const Edge& e, const std::array<double, 3>& sensitivity) {
     return e.base_time * (1.0 + e.load * sensitivity[static_cast<std::size_t>(e.mode)]);
