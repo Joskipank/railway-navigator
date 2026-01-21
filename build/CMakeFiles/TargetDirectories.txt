@@ -1,0 +1,5 @@
+/home/iminovm/railway-navigator/build/CMakeFiles/edit_cache.dir
+/home/iminovm/railway-navigator/build/CMakeFiles/rebuild_cache.dir
+/home/iminovm/railway-navigator/build/backend/CMakeFiles/railway_navigator.dir
+/home/iminovm/railway-navigator/build/backend/CMakeFiles/edit_cache.dir
+/home/iminovm/railway-navigator/build/backend/CMakeFiles/rebuild_cache.dir

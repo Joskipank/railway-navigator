@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/iminovm/railway-navigator/build/cmake_install.cmake",
+		"/home/iminovm/railway-navigator/build/backend/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
