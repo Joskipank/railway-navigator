@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Навигатор маршрутов</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <main class="layout">
+        <section class="panel panel-left">
+          <h1 class="app-title">Навигатор маршрутов</h1>
+          <label class="field">
+            <span class="field-label">Входные данные</span>
+            <textarea
+              id="graph-input"
+              rows="12"
+              placeholder="Вставьте входные данные..."
+            ></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">Маршрут</span>
+            <input
+              id="route-input"
+              type="text"
+              placeholder="Пример: 1-[metro]->2 2-[bus]->3"
+            />
+          </label>
+          <div class="actions">
+            <button id="build-btn" type="button">Построить граф</button>
+            <button id="highlight-btn" type="button">Подсветить маршрут</button>
+            <button id="clear-btn" type="button">Очистить</button>
+          </div>
+          <div class="legend">
+            <div class="legend-title">Легенда цветов</div>
+            <ul class="legend-list">
+              <li class="legend-item">
+                <span class="legend-swatch metro"></span>метро
+              </li>
+              <li class="legend-item">
+                <span class="legend-swatch bus"></span>автобус
+              </li>
+              <li class="legend-item">
+                <span class="legend-swatch rail"></span>ж/д
+              </li>
+              <li class="legend-item">
+                <span class="legend-swatch highlight"></span>подсветка
+              </li>
+            </ul>
+          </div>
+        </section>
+        <section class="panel panel-right">
+          <h2 class="panel-title">Граф</h2>
+          <div class="graph-wrap">
+            <svg
+              id="graph"
+              viewBox="0 0 900 600"
+              role="img"
+              aria-label="Визуализация графа"
+            ></svg>
+          </div>
+          <div id="status" class="status"></div>
+        </section>
+      </main>
+    </div>
+    <script src="main.js"></script>
+  </body>
+</html>
