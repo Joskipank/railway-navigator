@@ -7,6 +7,7 @@
   const loadExampleBtn = document.getElementById("load-example");
   const svg = document.getElementById("graph");
   const statusEl = document.getElementById("status");
+  const reportEl = document.getElementById("report");
 
   const MODE_CLASSES = {
     0: "metro",
@@ -25,6 +26,12 @@
 
   let graphState = null;
   let highlightTimer = null;
+  let buildId = 0;
+  const reportState = {
+    model: null,
+    zones: null,
+    backendError: null,
+  };
 
   function setStatus(message) {
     if (!statusEl) {
@@ -35,6 +42,194 @@
 
   function canUpdateBuildStatus() {
     return statusEl && statusEl.textContent === "Граф построен";
+  }
+
+  function createEl(tag, className, text) {
+    const element = document.createElement(tag);
+    if (className) {
+      element.className = className;
+    }
+    if (text !== undefined) {
+      element.textContent = text;
+    }
+    return element;
+  }
+
+  function formatNumber(value) {
+    if (!Number.isFinite(value)) {
+      return "";
+    }
+    const rounded = Math.round(value * 1000) / 1000;
+    return String(rounded);
+  }
+
+  function buildTable(headers, rows) {
+    const wrap = createEl("div", "report-table-wrap");
+    const table = createEl("table", "report-table");
+
+    if (headers && headers.length) {
+      const thead = createEl("thead");
+      const headRow = createEl("tr");
+      headers.forEach((header) => {
+        const th = createEl("th", "", header);
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+    }
+
+    const tbody = createEl("tbody");
+    rows.forEach((row) => {
+      const tr = createEl("tr");
+      row.forEach((cell) => {
+        const td = createEl("td");
+        if (cell instanceof Node) {
+          td.appendChild(cell);
+        } else {
+          td.textContent = cell;
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function buildScrollableTable(headers, rows) {
+    const wrap = createEl("div", "report-table-scroll");
+    const table = createEl("table", "report-table");
+    const thead = createEl("thead");
+    const headRow = createEl("tr");
+    headers.forEach((header) => {
+      const th = createEl("th", "", header);
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = createEl("tbody");
+    rows.forEach((row) => {
+      const tr = createEl("tr");
+      row.forEach((cell) => {
+        const td = createEl("td", "", cell);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function createLines(lines) {
+    const container = createEl("div", "report-lines");
+    lines.forEach((line) => {
+      container.appendChild(createEl("div", "report-line", line));
+    });
+    return container;
+  }
+
+  function renderReport(state) {
+    if (!reportEl) {
+      return;
+    }
+
+    reportEl.textContent = "";
+    reportEl.appendChild(createEl("div", "report-title", "Отчет"));
+
+    if (!state.model) {
+      reportEl.appendChild(
+        createEl("div", "report-empty", "Постройте граф, чтобы увидеть отчет.")
+      );
+      return;
+    }
+
+    const modelSection = createEl("div", "report-section");
+    modelSection.appendChild(
+      createEl("div", "report-section-title", "Параметры модели")
+    );
+
+    modelSection.appendChild(
+      createEl("div", "report-subtitle", "Чувствительность по видам")
+    );
+    modelSection.appendChild(
+      buildTable(
+        ["Показатель", "metro", "bus", "rail"],
+        [
+          [
+            "Чувствительность",
+            formatNumber(state.model.sensitivity[0]),
+            formatNumber(state.model.sensitivity[1]),
+            formatNumber(state.model.sensitivity[2]),
+          ],
+        ]
+      )
+    );
+
+    modelSection.appendChild(
+      createEl("div", "report-subtitle", "Матрица пересадок 3x3")
+    );
+    const matrixHeaders = ["", "metro", "bus", "rail"];
+    const matrixRows = state.model.transferMatrix.map((row, rowIndex) => [
+      ["metro", "bus", "rail"][rowIndex],
+      formatNumber(row[0]),
+      formatNumber(row[1]),
+      formatNumber(row[2]),
+    ]);
+    modelSection.appendChild(buildTable(matrixHeaders, matrixRows));
+
+    modelSection.appendChild(
+      createEl("div", "report-subtitle", "Локальные пересадки по станциям")
+    );
+    const transferRows = state.model.stationTransfer.map((value, index) => [
+      String(index + 1),
+      formatNumber(value),
+    ]);
+    modelSection.appendChild(
+      buildScrollableTable(["Станция", "Штраф"], transferRows)
+    );
+
+    reportEl.appendChild(modelSection);
+
+    const zonesSection = createEl("div", "report-section");
+    zonesSection.appendChild(
+      createEl("div", "report-section-title", "Изолированные зоны")
+    );
+
+    const modeLabels = [
+      { key: "metro", label: "метро" },
+      { key: "bus", label: "автобус" },
+      { key: "rail", label: "ж/д" },
+      { key: "all", label: "все виды" },
+    ];
+
+    const zoneRows = modeLabels.map((mode) => {
+      const zoneData = state.zones ? state.zones[mode.key] : null;
+      if (!zoneData) {
+        return [mode.label, "нет данных"];
+      }
+      if (zoneData.none || zoneData.components.length === 0) {
+        return [mode.label, "нет"];
+      }
+      const lines = zoneData.components.map((component) => {
+        return `#${component.index} (${component.size}): ${component.stations.join(
+          " "
+        )}`;
+      });
+      return [mode.label, createLines(lines)];
+    });
+
+    zonesSection.appendChild(buildTable(["Режим", "Компоненты"], zoneRows));
+
+    if (state.backendError) {
+      zonesSection.appendChild(
+        createEl("div", "report-note", `Backend: ${state.backendError}`)
+      );
+    }
+
+    reportEl.appendChild(zonesSection);
   }
 
   function firstLine(text) {
@@ -60,6 +255,68 @@
     return "";
   }
 
+  function parseBackendZones(output) {
+    const zones = {
+      metro: null,
+      bus: null,
+      rail: null,
+      all: null,
+    };
+    if (!output) {
+      return zones;
+    }
+
+    const lines = output.split(/\r?\n/);
+    let currentMode = null;
+
+    lines.forEach((rawLine) => {
+      const line = rawLine.trim();
+      const headerMatch = line.match(/^ISOLATED ZONES \(([^)]+)\)$/);
+      if (headerMatch) {
+        currentMode = headerMatch[1];
+        zones[currentMode] = { components: [], none: false };
+        return;
+      }
+
+      if (!currentMode) {
+        return;
+      }
+
+      if (!line) {
+        currentMode = null;
+        return;
+      }
+
+      if (line === "None") {
+        zones[currentMode] = { components: [], none: true };
+        currentMode = null;
+        return;
+      }
+
+      const componentMatch = line.match(/^(\d+)\.\s+(\d+)\s+stations:\s+(.+)$/);
+      if (componentMatch) {
+        const index = Number(componentMatch[1]);
+        const size = Number(componentMatch[2]);
+        const stations = componentMatch[3]
+          .trim()
+          .split(/\\s+/)
+          .map((value) => Number(value))
+          .filter((value) => Number.isInteger(value));
+
+        if (!zones[currentMode]) {
+          zones[currentMode] = { components: [], none: false };
+        }
+        zones[currentMode].components.push({
+          index,
+          size,
+          stations,
+        });
+      }
+    });
+
+    return zones;
+  }
+
   async function requestBackend(inputText) {
     const response = await fetch(BACKEND_ENDPOINT, {
       method: "POST",
@@ -82,20 +339,30 @@
     return payload;
   }
 
-  async function syncBackend(inputText) {
+  async function syncBackend(inputText, token) {
     if (!inputText || !inputText.trim()) {
       return;
     }
 
     try {
       const result = await requestBackend(inputText);
+      if (token !== buildId) {
+        return;
+      }
       if (!result.ok) {
         const message = firstLine(result.error || result.stderr || "backend error");
+        reportState.backendError = message;
+        reportState.zones = null;
+        renderReport(reportState);
         if (message && canUpdateBuildStatus()) {
           setStatus(`Ошибка backend: ${message}`);
         }
         return;
       }
+
+      reportState.backendError = null;
+      reportState.zones = parseBackendZones(result.stdout);
+      renderReport(reportState);
 
       const routeFromBackend = extractFirstRoute(result.stdout);
       if (routeFromBackend && routeEl && !routeEl.value.trim()) {
@@ -110,6 +377,12 @@
         setStatus("Граф построен (backend ok)");
       }
     } catch (error) {
+      if (token !== buildId) {
+        return;
+      }
+      reportState.backendError = "backend недоступен";
+      reportState.zones = null;
+      renderReport(reportState);
       console.warn("Backend unavailable", error);
     }
   }
@@ -161,22 +434,35 @@
       return { ok: false, error: "Ошибка парсинга: некорректные N и M" };
     }
 
+    const sensitivity = [];
     for (let i = 0; i < 3; i += 1) {
-      if (readNumber() === null) {
+      const value = readNumber();
+      if (value === null) {
         return { ok: false, error: "Ошибка парсинга: sensitivity" };
       }
+      sensitivity.push(value);
     }
 
-    for (let i = 0; i < 9; i += 1) {
-      if (readNumber() === null) {
-        return { ok: false, error: "Ошибка парсинга: матрица 3x3" };
+    const transferMatrix = [];
+    for (let i = 0; i < 3; i += 1) {
+      const row = [];
+      for (let j = 0; j < 3; j += 1) {
+        const value = readNumber();
+        if (value === null) {
+          return { ok: false, error: "Ошибка парсинга: матрица 3x3" };
+        }
+        row.push(value);
       }
+      transferMatrix.push(row);
     }
 
+    const stationTransfer = [];
     for (let i = 0; i < n; i += 1) {
-      if (readNumber() === null) {
+      const value = readNumber();
+      if (value === null) {
         return { ok: false, error: "Ошибка парсинга: station_transfer" };
       }
+      stationTransfer.push(value);
     }
 
     const edges = [];
@@ -204,7 +490,19 @@
       edges.push({ u, v, mode, baseTime, load });
     }
 
-    return { ok: true, data: { n, m, edges } };
+    return {
+      ok: true,
+      data: {
+        n,
+        m,
+        edges,
+        model: {
+          sensitivity,
+          transferMatrix,
+          stationTransfer,
+        },
+      },
+    };
   }
 
   function layoutNodes(n, width, height) {
@@ -462,8 +760,13 @@
 
     clearHighlight();
     renderGraph(parsed.data);
+    buildId += 1;
+    reportState.model = parsed.data.model;
+    reportState.zones = null;
+    reportState.backendError = null;
+    renderReport(reportState);
     setStatus("Граф построен");
-    syncBackend(inputEl.value);
+    syncBackend(inputEl.value, buildId);
   }
 
   function handleHighlightRoute() {

@@ -1,10 +1,63 @@
-3 2
-1.0 1.0 1.0
-0 1 1
-1 0 1
-1 1 0
-0.5 0.5 0.5
-1 2 0 10 0.2
-2 3 1 8 0.1
+# Multiple sample inputs for Railway Navigator.
+# Copy only the numeric block between BEGIN INPUT and END INPUT into the app.
+# Use ROUTE text for the route input field.
+
+SCENARIO 1: Two clusters, isolated zones in every mode.
+BEGIN INPUT
+7 8
+0.2 0.4 0.6
+0 1 2
+1 0 1.5
+2 1.5 0
+0.4 0.1 0.0 0.6 0.3 0.2 0.5
+1 2 0 12 0.2
+2 3 0 8 0.3
+1 2 1 11 0.4
+1 4 1 9 0.5
+3 4 2 10 0.1
+5 6 0 11 0.2
+6 7 1 7 0.5
+5 7 2 9 0.3
 1
-1 1 0.5 3
+1 2 0.5 4 3
+END INPUT
+ROUTE: 1-[bus]->4
+ALT_ROUTE: 1-[metro]->2 2-[metro]->3
+
+SCENARIO 2: All modes connected, isolated zones only per mode.
+BEGIN INPUT
+6 6
+0.1 0.2 0.35
+0 0.8 1.2
+0.8 0 0.9
+1.2 0.9 0
+0.2 0.0 0.1 0.3 0.2 0.1
+1 2 0 7 0.2
+2 3 0 6 0.3
+3 4 0 6 0.2
+4 5 1 5 0.4
+5 6 1 5 0.3
+2 5 2 4 0.2
+1
+1 1 0.4 6
+END INPUT
+ROUTE: 1-[metro]->2 2-[rail]->5 5-[bus]->6
+
+SCENARIO 3: Parallel edges between 1-2 (metro and bus).
+BEGIN INPUT
+5 6
+0.15 0.25 0.35
+0 1.1 1.6
+1.1 0 1.0
+1.6 1.0 0
+0.0 0.2 0.4 0.1 0.3
+1 2 0 10 0.2
+1 2 1 9 0.3
+2 3 0 7 0.1
+2 4 1 8 0.2
+3 4 2 6 0.3
+4 5 2 5 0.4
+1
+1 1 0.3 5
+END INPUT
+ROUTE: 1-[bus]->2 2-[bus]->4 4-[rail]->5
