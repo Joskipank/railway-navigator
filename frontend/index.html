@@ -27,8 +27,31 @@
               placeholder="Пример: 1-[metro]->2 2-[bus]->3"
             />
           </label>
+          <div class="route-fields">
+            <label class="field compact">
+              <span class="field-label">Старт</span>
+              <input
+                id="start-input"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                placeholder="1"
+              />
+            </label>
+            <label class="field compact">
+              <span class="field-label">Финиш</span>
+              <input
+                id="target-input"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                placeholder="4"
+              />
+            </label>
+          </div>
           <div class="actions">
             <button id="build-btn" type="button">Построить граф</button>
+            <button id="find-btn" type="button">Найти маршрут</button>
             <button id="highlight-btn" type="button">Подсветить маршрут</button>
             <button id="clear-btn" type="button">Очистить</button>
           </div>

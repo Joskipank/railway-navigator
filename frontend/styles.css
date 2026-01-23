@@ -85,7 +85,8 @@ h2 {
 }
 
 textarea,
-input[type="text"] {
+input[type="text"],
+input[type="number"] {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--border);
@@ -103,7 +104,8 @@ textarea {
 }
 
 textarea:focus,
-input[type="text"]:focus {
+input[type="text"]:focus,
+input[type="number"]:focus {
   outline: none;
   border-color: #94b8ff;
   box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
@@ -112,6 +114,17 @@ input[type="text"]:focus {
 textarea::placeholder,
 input::placeholder {
   color: #99a2b3;
+}
+
+.route-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.field.compact {
+  margin-bottom: 0;
 }
 
 .actions {
@@ -172,6 +185,16 @@ button:focus-visible {
 #clear-btn {
   background: #f4f6f8;
   color: #334155;
+}
+
+#find-btn {
+  background: #e8f8ef;
+  border-color: #bfe8cd;
+  color: #1f6b3a;
+}
+
+#find-btn:hover {
+  background: #daf1e4;
 }
 
 .legend {

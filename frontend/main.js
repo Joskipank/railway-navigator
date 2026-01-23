@@ -2,9 +2,12 @@
   const inputEl = document.getElementById("graph-input");
   const routeEl = document.getElementById("route-input");
   const buildBtn = document.getElementById("build-btn");
+  const findBtn = document.getElementById("find-btn");
   const highlightBtn = document.getElementById("highlight-btn");
   const clearBtn = document.getElementById("clear-btn");
   const loadExampleBtn = document.getElementById("load-example");
+  const startEl = document.getElementById("start-input");
+  const targetEl = document.getElementById("target-input");
   const svg = document.getElementById("graph");
   const statusEl = document.getElementById("status");
   const reportEl = document.getElementById("report");
@@ -23,6 +26,7 @@
 
   const HIGHLIGHT_DELAY = 700;
   const BACKEND_ENDPOINT = "/api/run";
+  const DEFAULT_K = 0;
 
   let graphState = null;
   let highlightTimer = null;
@@ -505,6 +509,49 @@
     };
   }
 
+  function serializeNumber(value) {
+    return Number.isFinite(value) ? String(value) : "0";
+  }
+
+  function serializeInputForBackend(data, start, target, k) {
+    const lines = [];
+    lines.push(`${data.n} ${data.m}`);
+    lines.push(data.model.sensitivity.map(serializeNumber).join(" "));
+    data.model.transferMatrix.forEach((row) => {
+      lines.push(row.map(serializeNumber).join(" "));
+    });
+    lines.push(data.model.stationTransfer.map(serializeNumber).join(" "));
+    data.edges.forEach((edge) => {
+      lines.push(
+        [
+          edge.u,
+          edge.v,
+          edge.mode,
+          serializeNumber(edge.baseTime),
+          serializeNumber(edge.load),
+        ].join(" ")
+      );
+    });
+    lines.push("1");
+    lines.push(`${start} 1 ${serializeNumber(k)} ${target}`);
+    return lines.join("\n");
+  }
+
+  function readNodeValue(inputEl) {
+    if (!inputEl) {
+      return null;
+    }
+    const raw = inputEl.value.trim();
+    if (!raw) {
+      return null;
+    }
+    const value = Number(raw);
+    if (!Number.isInteger(value)) {
+      return null;
+    }
+    return value;
+  }
+
   function layoutNodes(n, width, height) {
     const positions = new Map();
     const cx = width / 2;
@@ -769,6 +816,93 @@
     syncBackend(inputEl.value, buildId);
   }
 
+  async function handleFindRoute() {
+    if (!inputEl) {
+      return;
+    }
+
+    const parsed = parseInput(inputEl.value);
+    if (!parsed.ok) {
+      setStatus(parsed.error);
+      return;
+    }
+
+    clearHighlight();
+    renderGraph(parsed.data);
+    buildId += 1;
+    reportState.model = parsed.data.model;
+    reportState.zones = null;
+    reportState.backendError = null;
+    renderReport(reportState);
+
+    const start = readNodeValue(startEl);
+    const target = readNodeValue(targetEl);
+    if (start === null || target === null) {
+      setStatus("Введите старт и финиш");
+      return;
+    }
+
+    if (start < 1 || start > parsed.data.n || target < 1 || target > parsed.data.n) {
+      setStatus("Старт или финиш вне диапазона");
+      return;
+    }
+
+    const token = buildId;
+    setStatus("Ищу маршрут...");
+    const backendInput = serializeInputForBackend(
+      parsed.data,
+      start,
+      target,
+      DEFAULT_K
+    );
+
+    try {
+      const result = await requestBackend(backendInput);
+      if (token !== buildId) {
+        return;
+      }
+      if (!result.ok) {
+        const message = firstLine(result.error || result.stderr || "backend error");
+        reportState.backendError = message;
+        reportState.zones = null;
+        renderReport(reportState);
+        setStatus(`Ошибка backend: ${message || "backend error"}`);
+        return;
+      }
+
+      reportState.backendError = null;
+      reportState.zones = parseBackendZones(result.stdout);
+      renderReport(reportState);
+
+      const routeFromBackend = extractFirstRoute(result.stdout);
+      if (!routeFromBackend || routeFromBackend === "unreachable") {
+        setStatus("Маршрут не найден");
+        return;
+      }
+
+      if (routeEl) {
+        routeEl.value = routeFromBackend;
+      }
+
+      const parsedRoute = parseRoute(routeFromBackend);
+      if (parsedRoute.ok) {
+        setStatus("Маршрут найден, запускаю подсветку");
+        highlightRoute(parsedRoute.segments);
+      } else {
+        setStatus("Маршрут найден");
+      }
+    } catch (error) {
+      if (token !== buildId) {
+        return;
+      }
+      reportState.backendError = "backend недоступен";
+      reportState.zones = null;
+      renderReport(reportState);
+      setStatus("Backend недоступен");
+      console.warn("Backend unavailable", error);
+    }
+  }
+
   function handleHighlightRoute() {
     if (!graphState) {
       setStatus("Сначала постройте граф");
@@ -808,11 +942,21 @@
 2 4 2 7 0.6`;
 
     routeEl.value = "1-[metro]->2 2-[bus]->3 3-[rail]->4";
+    if (startEl) {
+      startEl.value = "1";
+    }
+    if (targetEl) {
+      targetEl.value = "4";
+    }
     setStatus("Пример загружен");
   }
 
   if (buildBtn) {
     buildBtn.addEventListener("click", handleBuildGraph);
+  }
+
+  if (findBtn) {
+    findBtn.addEventListener("click", handleFindRoute);
   }
 
   if (highlightBtn) {
